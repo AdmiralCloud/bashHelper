@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
 CONFIG=~/.ssh/config
+PATH_TO_REPOS=/opt
+GIT_USER=admiralcloud
 
 ### SETUP an optional config.txt file with
 #CONFIG=~/.ssh/config // path to SSH config for this user
