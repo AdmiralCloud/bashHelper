@@ -3,7 +3,7 @@
 This repository holds a growing number of Bash helper scripts. Every folder has it's own README.
 
 ## License
-Copyright 2017 Mark Poepping, mmpro Berlin
+Copyright 2017-2022 Mark Poepping, AdmiralCloud AG Berlin
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
