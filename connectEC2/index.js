@@ -34,6 +34,8 @@ let awsQuestions = [
 ]
 const answers = await inquirer.prompt(awsQuestions)
 
+process.env.AWS_PROFILE = answers?.awsProfile
+
 // GET A SESSION
 const STS = new STSClient({
   region
