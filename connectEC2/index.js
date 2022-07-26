@@ -38,7 +38,7 @@ process.env.AWS_PROFILE = answers?.awsProfile
 
 // GET A SESSION
 const STS = new STSClient({
-  region
+  //region
 })
 let command = new GetSessionTokenCommand({
   SerialNumber: answers?.mfaArn,
@@ -53,6 +53,11 @@ let credentials = {
   expiration: response?.Credentials?.Expiration,
 }
 // aws sts get-session-token --serial-number $MFASERIAL --token-code $MFACODE
+
+// SET SESSION VARIABLES
+process.env.AWS_ACCESS_KEY_ID = credentials.accessKeyId
+process.env.AWS_SECRET_ACCESS_KEY = credentials.secretAccessKey
+process.env.AWS_SESSION_TOKEN = credentials.sessionToken
 
 command = new GetCallerIdentityCommand();
 response = await STS.send(command);
@@ -78,73 +83,82 @@ if (ageInDays > 90) {
 // END OF SESSION ACQUISITION
 
 
-// FETCH LIST OF RUNNING INSTANCES
-const ec2 = new EC2Client({
-  region,
-  credentials
+const selectedAWSService = await inquirer.prompt({
+  type: 'list',
+  name: 'service',
+  message: 'Please select the AWS service you want to use',
+  choices: ['ec2', 's3']
 })
-let awsParams = {
-  Filters: [{
-    Name: "instance-state-name", 
-    Values: ["running"]
-  }]
-}
-command = new DescribeInstancesCommand(awsParams);
-response = await ec2.send(command)
-response?.Reservations.forEach(reservation => {
-  instances.push({
-    value: reservation.Instances[0].InstanceId,
-    name: reservation.Instances[0].Tags.find(item => { 
-      if (item.Key === 'Name') return item 
-    })?.Value,
-    hostname: reservation.Instances[0].PublicDnsName,
-    availabilityZone: reservation.Instances[0].Placement?.AvailabilityZone
+
+if (selectedAWSService?.service === 'ec2') {
+  // FETCH LIST OF RUNNING INSTANCES
+  const ec2 = new EC2Client({
+    region,
+    credentials
   })
-})
-
-// sort instances by name
-instances.sort((a, b) => {
-  const nameA = a.name.toUpperCase(); // ignore upper and lowercase
-  const nameB = b.name.toUpperCase(); // ignore upper and lowercase
-  if (nameA < nameB) {
-    return -1
+  let awsParams = {
+    Filters: [{
+      Name: "instance-state-name", 
+      Values: ["running"]
+    }]
   }
-  if (nameA > nameB) {
-    return 1
+  command = new DescribeInstancesCommand(awsParams);
+  response = await ec2.send(command)
+  response?.Reservations.forEach(reservation => {
+    instances.push({
+      value: reservation.Instances[0].InstanceId,
+      name: reservation.Instances[0].Tags.find(item => { 
+        if (item.Key === 'Name') return item 
+      })?.Value,
+      hostname: reservation.Instances[0].PublicDnsName,
+      availabilityZone: reservation.Instances[0].Placement?.AvailabilityZone
+    })
+  })
+
+  // sort instances by name
+  instances.sort((a, b) => {
+    const nameA = a.name.toUpperCase(); // ignore upper and lowercase
+    const nameB = b.name.toUpperCase(); // ignore upper and lowercase
+    if (nameA < nameB) {
+      return -1
+    }
+    if (nameA > nameB) {
+      return 1
+    }
+    return 0
+  })
+
+  const selectedValue = await inquirer.prompt({
+    type: 'rawlist',
+    name: 'instanceId',
+    message: 'Please select the instance you want to connect to',
+    choices: instances
+  })
+  const instance = instances.find(item => {
+    if (item.value === selectedValue.instanceId) return item
+  })
+  console.log('Connecting to | %s', instance?.name)
+
+  // send public key
+  const ec2conn = new EC2InstanceConnectClient({
+    region,
+    credentials
+  })
+  awsParams = {
+    InstanceId: instance?.value,
+    AvailabilityZone: instance?.availabilityZone,
+    InstanceOSUser: 'ubuntu',
+    SSHPublicKey: readFileSync(`${config?.keyFile?.home}${config?.keyFile?.path}.pub`).toString()
   }
-  return 0
-})
 
-const selectedValue = await inquirer.prompt({
-  type: 'rawlist',
-  name: 'instanceId',
-  message: 'Please select the instance you want to connect to',
-  choices: instances
-})
-const instance = instances.find(item => {
-  if (item.value === selectedValue.instanceId) return item
-})
-console.log('Connecting to | %s', instance?.name)
+  command = new SendSSHPublicKeyCommand(awsParams);
+  response = await ec2conn.send(command);
 
-// send public key
-const ec2conn = new EC2InstanceConnectClient({
-  region,
-  credentials
-})
-awsParams = {
-  InstanceId: instance?.value,
-  AvailabilityZone: instance?.availabilityZone,
-  InstanceOSUser: 'ubuntu',
-  SSHPublicKey: readFileSync(`${config?.keyFile?.home}${config?.keyFile?.path}.pub`).toString()
+
+  console.log('>>> YOU NOW HAVE 60 SECONDS TO SSH INTO THE INSTANCE')
+  console.log(`ssh -i ~${config?.keyFile?.path} ubuntu@${instance.hostname}`)
+
 }
-
-command = new SendSSHPublicKeyCommand(awsParams);
-response = await ec2conn.send(command);
-
-// SET SESSION VARIABLES
-process.env.AWS_ACCESS_KEY_ID = credentials.accessKeyId
-process.env.AWS_SECRET_ACCESS_KEY = credentials.secretAccessKey
-process.env.AWS_SESSION_TOKEN = credentials.sessionToken
-
-console.log('>>> YOU NOW HAVE 60 SECONDS TO SSH INTO THE INSTANCE')
-console.log(`ssh -i ~${config?.keyFile?.path} ubuntu@${instance.hostname}`)
+else {
+  console.log(`export AWS_ACCESS_KEY_ID=${credentials.accessKeyId} AWS_SECRET_ACCESS_KEY=${credentials.secretAccessKey} AWS_SESSION_TOKEN=${credentials.sessionToken}`)
+}
