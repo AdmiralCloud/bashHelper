@@ -36,7 +36,7 @@ Create or update .bash_profile (or depending on your setup .zshrc etc) in your h
 # add this line at the end
 alias connectEC2="node PATH-TO-PACKAGE"
 
-# then run (according to your shell) to make sure the changes are activated
+# then run this command to make sure the changes are activated (according to your shell)
 source ~/.bash_profile
 ```
 

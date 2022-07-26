@@ -22,8 +22,22 @@ aws s3 ls --profile mfa
 
 ```
 
+In order to allow calling the script from everywhere, you have to create and alias in your ~/.bash_profile (or depending on your setup .zshrc etc) 
+```
+# add this line at the end
+alias awsConnect="PATH_TO_PACKAGE/connect.sh"
+
+
+# then run the following command to make sure the changes are activated (according to your shell)
+source ~/.bash_profile
+```
+
 # Prerequisites
-Create a config file and add your MFA ARN. This way you don't have to enter it every time you use this script.
+Create a config.txt file in the root directory of this project and add your MFA ARN. This way you don't have to enter it every time you use this script.
+
+```
+MFAARN=arn:aws:iam::ACCOUNT-ID:mfa/USERNAME
+```
 
 # Copyright
 2022 Mark Poepping, [AdmiralCloud AG](https://www.admiralcloud.com)
