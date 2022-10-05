@@ -1,7 +1,7 @@
 # Connect to AWS using MFA/temporary session
 If you have MFA enabled for AWS CLI - which is a reasonable security precaution - you need to create a temporary session. You cannot access CLI with your credentials (access key and access secret).
 
-This script makes the temporary session globally available using a named profile. The named profile is either "mfa" for your default AWS profile or "PROFILENAME.mfa" for named profiles.
+This script makes the temporary session globally available using a named profile. The named profile is either "default" for your default AWS profile or "PROFILENAME.mfa" for named profiles.
 
 # Usage
 Run the script "connect.sh", enter your profile, the MFA ARN and a valid MFA token. The script returns the profile you have to use in all subsequent calls. The session is valid for 12 hours by default and is not limited to your current shell/tab.
@@ -10,7 +10,7 @@ Run the script "connect.sh", enter your profile, the MFA ARN and a valid MFA tok
 Example:
 
 ./connect.sh
-Please enter your profile or leave empty for default []:
+Please enter your profile or leave empty for default [default]:
 
 MFA ARN [arn:aws:iam::1234:mfa/janedoe]:
 Enter a valid MFA Token: 123456
@@ -18,7 +18,7 @@ Enter a valid MFA Token: 123456
 AWS Session for is ready and valid for 12 hours. Use profile mfa.
 
 // NOW you can access AWS like this
-aws s3 ls --profile mfa
+aws s3 ls --profile default.mfa
 
 ```
 
@@ -29,7 +29,7 @@ alias awsConnect="PATH_TO_PACKAGE/connect.sh"
 
 
 # then run the following command to make sure the changes are activated (according to your shell)
-source ~/.bash_profile
+source ~/.bash_profile # source ~/.zshrc if you use zsh
 ```
 
 # Prerequisites

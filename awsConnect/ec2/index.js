@@ -7,19 +7,21 @@ import { EC2InstanceConnectClient, SendSSHPublicKeyCommand } from "@aws-sdk/clie
 import { config } from './config.js'
 const region = config?.region || 'eu-central-1'
 
-let awsQuestions = [
+const awsQuestions = [
   {
     type: 'input',
     name: 'awsProfile',
     message: 'The AWS MFA profile to use',
-    default: 'mfa'
+    default: 'default'
   }
 ]
 const answers = await inquirer.prompt(awsQuestions)
+if (answers?.awsProfile && !answers.awsProfile.toLowerCase().endsWith('.mfa')) {
+  answers.awsProfile += '.mfa'
+}
 process.env.AWS_PROFILE = answers?.awsProfile
 
-
-let instances = []
+const instances = []
 
 // FETCH LIST OF RUNNING INSTANCES
 const ec2 = new EC2Client({
