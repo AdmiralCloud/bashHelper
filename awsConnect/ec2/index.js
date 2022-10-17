@@ -1,5 +1,6 @@
-import { readFileSync } from 'fs'
-import inquirer from "inquirer"
+import { readFileSync, existsSync } from 'fs'
+import { homedir } from 'os'
+import inquirer from 'inquirer'
 
 import { EC2Client, DescribeInstancesCommand } from "@aws-sdk/client-ec2"; // ES Modules import
 import { EC2InstanceConnectClient, SendSSHPublicKeyCommand } from "@aws-sdk/client-ec2-instance-connect"; // ES Modules import
@@ -29,7 +30,7 @@ const ec2 = new EC2Client({
 })
 let awsParams = {
   Filters: [{
-    Name: "instance-state-name", 
+    Name: "instance-state-name",
     Values: ["running"]
   }]
 }
@@ -38,8 +39,8 @@ let response = await ec2.send(command)
 response?.Reservations.forEach(reservation => {
   instances.push({
     value: reservation.Instances[0].InstanceId,
-    name: reservation.Instances[0].Tags.find(item => { 
-      if (item.Key === 'Name') return item 
+    name: reservation.Instances[0].Tags.find(item => {
+      if (item.Key === 'Name') return item
     })?.Value,
     hostname: reservation.Instances[0].PublicDnsName,
     availabilityZone: reservation.Instances[0].Placement?.AvailabilityZone
@@ -84,6 +85,41 @@ awsParams = {
 command = new SendSSHPublicKeyCommand(awsParams);
 response = await ec2conn.send(command);
 
+const outputDefaultConnect = () => {
+  console.log('>>> YOU NOW HAVE 60 SECONDS TO SSH INTO THE INSTANCE')
+  console.log(`ssh -i ~${config?.keyFile?.path} ubuntu@${instance?.hostname}`)
+}
 
-console.log('>>> YOU NOW HAVE 60 SECONDS TO SSH INTO THE INSTANCE')
-console.log(`ssh -i ~${config?.keyFile?.path} ubuntu@${instance.hostname}`)
+const sshConfigFile = `${homedir()}/.ssh/config`
+
+if (!existsSync(sshConfigFile)) {
+  outputDefaultConnect()
+  process.exit(0)
+}
+
+const sshConfig = readFileSync(sshConfigFile)
+  .toString('utf8')             // buffer to utf8 string
+  .split('\n')                  // to array split by new line
+  .filter(f => !!`${f}`.trim()) // discard empty lines
+  .reduce((p, v) => {           // transform into array of objects grouped by 'Host'
+    v = v.trim()
+    if (v.toLowerCase().startsWith('host ')) p.push({ Host: v.split(' ')[1] })
+    else if (p.length > 0) {
+      if (v.toLowerCase().startsWith('hostname')) {
+        const i = v.indexOf(' ')
+        p[p.length - 1][v.substring(0, i)] = v.substring(i + 1)
+      } else {
+        if (!('other' in p[p.length - 1])) p[p.length - 1].other = []
+        p[p.length - 1].other.push(v)
+      }
+    }
+    return p
+  }, [])
+
+outputDefaultConnect()
+
+const configConnect = sshConfig.filter((v) => v.HostName === instance?.hostname)
+if (configConnect.length > 0) {
+  console.log('>>> OR')
+  configConnect.forEach(v => console.log(`ssh ${v.Host}\n  HostName ${v.HostName}\n  ${v.other.join('\n  ')}`))
+}
