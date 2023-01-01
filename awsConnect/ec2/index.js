@@ -36,14 +36,17 @@ let awsParams = {
 }
 let command = new DescribeInstancesCommand(awsParams);
 let response = await ec2.send(command)
+
 response?.Reservations.forEach(reservation => {
-  instances.push({
-    value: reservation.Instances[0].InstanceId,
-    name: reservation.Instances[0].Tags.find(item => {
-      if (item.Key === 'Name') return item
-    })?.Value,
-    hostname: reservation.Instances[0].PublicDnsName,
-    availabilityZone: reservation.Instances[0].Placement?.AvailabilityZone
+  reservation?.Instances.forEach(instance => {
+    instances.push({
+      value: instance.InstanceId,
+      name: instance.Tags.find(item => { 
+        if (item.Key === 'Name') return item 
+      })?.Value,
+      hostname: instance.PublicDnsName,
+      availabilityZone: instance.Placement?.AvailabilityZone
+    })
   })
 })
 
