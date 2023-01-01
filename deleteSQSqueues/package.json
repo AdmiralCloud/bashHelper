@@ -1,0 +1,12 @@
+{
+  "name": "deleteSQSqueues",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Mark Poepping",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.839.0",
+    "lodash": "^4.17.20",
+    "minimist": "^1.2.5"
+  }
+}
