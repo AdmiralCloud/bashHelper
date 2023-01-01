@@ -7,6 +7,6 @@
   "dependencies": {
     "aws-sdk": "^2.839.0",
     "lodash": "^4.17.20",
-    "minimist": "^1.2.5"
+    "minimist": "^1.2.6"
   }
 }
