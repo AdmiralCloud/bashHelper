@@ -1,7 +1,11 @@
 #!/usr/bin/env zsh
 
+echo "Determine directory"
+SCRIPTDIR=`dirname $0`
+echo $SCRIPTDIR
+
 declare -A securitygroups    # Declare associative array
-source config.txt
+source $SCRIPTDIR/config.txt
 
 myIP="$(curl -s ifconfig.me)"
 myIP=${myIP}/32
@@ -21,11 +25,11 @@ for sg value in ${(kv)securitygroups}; do
     echo "Environment                ${env}"
     echo ""
 
-    json=`aws ec2 describe-security-groups --group-id $sg --query "SecurityGroups[0].IpPermissions" --profile ${env}` 
+    json=`aws ec2 describe-security-groups --group-id $sg --query "SecurityGroups[0].IpPermissions" --profile ${env} --region eu-central-1` 
     if [[ ! -z "$json" ]]; 
     then
-      echo "Revoking existing IP/rules"
-      aws ec2 revoke-security-group-ingress --cli-input-json "{\"GroupId\": \"$sg\", \"IpPermissions\": $json}" --profile $env
+      echo "${env} - Revoking existing IP/rules"
+      aws ec2 revoke-security-group-ingress --cli-input-json "{\"GroupId\": \"$sg\", \"IpPermissions\": $json}" --profile $env --region eu-central-1
     fi
 
 
@@ -34,8 +38,8 @@ for sg value in ${(kv)securitygroups}; do
     for port in "${ports[@]}"; do # access each element of array
       if [[ ! -z "$port" ]]; 
         then
-          echo "Authorizing IP ${myIP} for port ${port}"
-          aws ec2 authorize-security-group-ingress --group-id $sg --ip-permissions FromPort=$port,ToPort=$port,IpProtocol=tcp,IpRanges='[{CidrIp='${myIP}',Description="'${description}'"}]' --profile $env
+          echo "${env} - Authorizing IP ${myIP} for port ${port}"
+          aws ec2 authorize-security-group-ingress --group-id $sg --ip-permissions FromPort=$port,ToPort=$port,IpProtocol=tcp,IpRanges='[{CidrIp='${myIP}',Description="'${description}'"}]' --profile $env --region eu-central-1
 
         fi
     done
