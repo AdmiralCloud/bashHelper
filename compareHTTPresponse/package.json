@@ -1,0 +1,11 @@
+{
+  "name": "ac-compare-httpResponse",
+  "version": "0.0.1",
+  "description": "Compares response objects of HTTP responses",
+  "main": "index.js",
+  "author": "Mark Poepping",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.2.6"
+  }
+}
