@@ -1,73 +1,47 @@
-# Update target groups for a given collection (e.g. Bullv1, OGS, Stat)
-# Remove instance X from TG
-# After successful removal a server can be restarted
-# Also allow adding services again
+#!/bin/bash
 
-#!/usr/bin/env bash
+# Default values
+DEFAULT_OPERATION="register"
+DEFAULT_CONFIG_FILE="apiServer.txt"
+DEFAULT_INSTANCE_ID="i-xxxxxxxxxxxxxxxxx"
+DEFAULT_PROFILE=default.mfa
 
-read -p "Enter config [statServer]: " configFile
-configFile=${configFile:-statServer}
-source ./$configFile.txt
-echo "Using configuration $configFile"
-echo ""
+# Get the operation, instance ID and config file from the command line or use defaults
+CONFIG_FILE=${1:-$DEFAULT_CONFIG_FILE}
 
-read -p "Please enter the instance to remove from targets" instance
-#instance=${instance:-"i-xxxxxx"}
-echo "Using instance $instance"
-echo ""
-
-response=$(aws ec2 describe-instances --instance-ids $instance \
-  --filters Name=tag-key,Values=Name \
-  --query 'Reservations[*].Instances[*].{Instance:InstanceId,Name:Tags[?Key==`Name`]|[0].Value}' --output text
-)
-echo "INSTANCE"
-echo $response
-echo ""
-
-echo "OPERATION"
-read -p "Add or remove? " op
-op=${op:-add}
-
-read -p "Are you sure? " -n 1 -r
-echo    # (optional) move to a new line
-if [[ $REPLY =~ ^[Nn]$ ]]
-then
-  exit
+# Check if config file exists
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Config file not found: $CONFIG_FILE"
+    exit 1
 fi
 
-if [[ $op = "remove" ]]
-then
-  echo "Removing instance from targets"
-  for target in "${targets[@]}"; do
-    echo "Remove $instance from $target"
-    response=$(aws elbv2 deregister-targets --target-group-arn=$target --targets Id=$instance)
-    if [[ $response == *"error"* ]]
-    then
-      echo $response
-    else 
-      echo "Removal successful"
-    fi
-    echo ""
-  done
-else
-  echo "Adding instance to targets"
-  for target in "${targets[@]}"; do
-    echo "Adding $instance to $target"
-    response=$(aws elbv2 register-targets --target-group-arn=$target --targets Id=$instance)
-    if [[ $response == *"error"* ]]
-    then
-      echo $response
-    else 
-      echo "Adding successful"
-    fi
-    echo ""
-  done
+read -p "Please enter instance ID [$DEFAULT_INSTANCE_ID]: " INSTANCE_ID
+INSTANCE_ID=${INSTANCE_ID:-$DEFAULT_INSTANCE_ID}
+
+read -p "Please enter operation [$DEFAULT_OPERATION]: " OPERATION
+OPERATION=${OPERATION:-$DEFAULT_OPERATION}
+
+read -p "Which AWS Profile to use? [$DEFAULT_PROFILE]: " PROFILE
+PROFILE=${PROFILE:-$DEFAULT_PROFILE}
+
+# Load target groups from the config file
+TARGET_GROUP_ARNS=()
+while IFS= read -r line; do
+    TARGET_GROUP_ARNS+=("$line")
+done < "$CONFIG_FILE"
+
+# Check if config file was empty
+if [ ${#TARGET_GROUP_ARNS[@]} -eq 0 ]; then
+    echo "Error: config file is empty - please add target groups (one per line)"
+    exit 1
 fi
 
-
-
-
-
-
-
-
+# For each target group ARN
+for TARGET_GROUP_ARN in "${TARGET_GROUP_ARNS[@]}"; do
+    # Register or deregister based on the operation
+    echo "Operation:   $OPERATION"
+    echo "Instance:    $INSTANCE_ID"
+    echo "TargetGroup: $TARGET_GROUP_ARN"
+    response=$(aws elbv2 $OPERATION-targets --target-group-arn $TARGET_GROUP_ARN --targets Id=$INSTANCE_ID --profile $PROFILE --region eu-central-1)
+    echo $response
+done
