@@ -46,18 +46,20 @@ while read -r domain; do
     done
   else
     # Iterate over each header
+    echo $domain
     for (( i=0; i<$header_count; i++ )); do
       # Fetch the headers from the domain and grep for the header
       # ^[Hh] tells grep to match the start of the line with either a capital H or a lowercase h
       # This way, grep will only match lines that start with the exact header name
-      header_value=$(curl -sI -m 5 "https://$domain" | grep -i "^${headers[$i]}:")
+      header_value=$(curl -sI "https://$domain" | grep -i "^${headers[$i]}:")
 
       # Remove newline characters and trim leading/trailing white space
       header_value=$(echo "${header_value#*:}" | tr -d '\n\r' | xargs)
+      echo "${headers[$i]} -> $header_value"
 
       # Check if the header is found and if the value matches the expected value
       if [[ "${expected_values[$i]}" == "ANY" && -n "$header_value" ]]; then
-        # Add a check mark to the result
+        # Add a check mark to the result - ANY -> the header is present with any value
         result+="| ✓ Any "
       elif [[ "${expected_values[$i]}" == "NONE" && -z "$header_value" ]]; then
         # Add a check mark to the result
