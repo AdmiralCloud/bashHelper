@@ -1,0 +1,64 @@
+{
+  "ACL": {
+    "Owner": {
+      "ID": "{{S3_OWNER_ID}}"
+    },
+    "Grants": [
+      {
+        "Grantee": {
+          "ID": "{{S3_GRANTEE}}",
+          "Type": "CanonicalUser"
+        },
+        "Permission": "FULL_CONTROL"
+      },
+      {
+        "Grantee": {
+          "ID": "{{S3_GRANTEE}}",
+          "Type": "CanonicalUser"
+        },
+        "Permission": "FULL_CONTROL"
+      },
+      {
+        "Grantee": {
+          "ID": "{{S3_GRANTEE}}",
+          "Type": "CanonicalUser"
+        },
+        "Permission": "FULL_CONTROL"
+      },
+      {
+        "Grantee": {
+          "ID": "{{S3_GRANTEE}}",
+          "Type": "CanonicalUser"
+        },
+        "Permission": "FULL_CONTROL"
+      }
+    ]
+  },
+  "Website": {
+    "IndexDocument": {
+      "Suffix": "index.html"
+    },
+    "RoutingRules": [
+      {
+        "Condition": {
+          "HttpErrorCodeReturnedEquals": "404"
+        },
+        "Redirect": {
+          "ReplaceKeyPrefixWith": "#"
+        }
+      }
+    ]
+  },
+  "Encryption": {
+    "ServerSideEncryptionConfiguration": {
+      "Rules": [
+        {
+          "ApplyServerSideEncryptionByDefault": {
+            "SSEAlgorithm": "AES256"
+          },
+          "BucketKeyEnabled": false
+        }
+      ]
+    }
+  }
+}
