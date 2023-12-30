@@ -199,15 +199,15 @@ else
     DOMAIN_NAME=$(echo "$DISTRIBUTION_INFO" | jq -r '.DomainName')
 
     echo "CloudFront Distribution ID: $CLOUDFRONT_ID"
+fi
 
-    export AWS_REGION=$ORIGINAL_AWS_REGION
-    # Generate and apply the bucket policy including the CloudFront Distribution ID
-    BUCKET_POLICY=$(cat <<EOF
-    {
+export AWS_REGION=$ORIGINAL_AWS_REGION
+# Generate and apply the bucket policy including the CloudFront Distribution ID
+BUCKET_POLICY=$(cat <<EOF
+{
     "Version": "2008-10-17",
     "Id": "PolicyForCloudFrontPrivateContent",
-    "Statement": [
-        {
+    "Statement": [{
         "Sid": "AllowCloudFrontServicePrincipal",
         "Effect": "Allow",
         "Principal": {
@@ -220,14 +220,12 @@ else
             "AWS:SourceArn": "arn:aws:cloudfront::$ACCOUNT_ID:distribution/$CLOUDFRONT_ID"
             }
         }
-        }
-    ]
-    }
-    EOF
-    )
+    }]
+}
+EOF
+)
 
-    aws s3api put-bucket-policy --bucket "$BUCKET_NAME" --policy "$BUCKET_POLICY"
-fi
+aws s3api put-bucket-policy --bucket "$BUCKET_NAME" --policy "$BUCKET_POLICY"
 
 
 echo "Resources prepared and configured successfully."

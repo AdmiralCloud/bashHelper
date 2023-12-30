@@ -1,3 +1,4 @@
 placeholder_config*
 s3_config_processed*
+cloudfront_config_processed*
 !placeholder_config_template.json
