@@ -1,11 +1,42 @@
 #!/bin/bash
 
 # Get command line arguments
-domain_file=$1
-headers_file=$2
-
-# Output file
+domain_file="domains.txt"
+header_file="headers.txt"
+awsProfile="default.mfa"
 output_file="output.md"
+enableCF=false
+
+# Parse named command-line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --domain_file)
+            domain_file="$2"
+            shift 2
+            ;;
+        --header_file)
+            header_file="$2"
+            shift 2
+            ;;
+        --awsProfile)
+            awsProfile="$2"
+            shift 2
+            ;;
+        --output_file)
+            output_file="$2"
+            shift 2
+            ;;
+        --enableCF)
+            enableCF=true
+            shift
+            ;;
+        *)
+            echo "Unknown parameter passed: $1"
+            exit 1
+            ;;
+    esac
+done
+
 
 
 # Initialize empty arrays for headers and expected_values
@@ -16,7 +47,7 @@ declare -a expected_values
 while IFS=',' read -r header expected_value; do
     headers+=("$header")
     expected_values+=("$expected_value")
-done < "$headers_file"
+done < "$header_file"
 
 # Number of headers to check
 header_count=${#headers[@]}
@@ -28,6 +59,10 @@ for (( i=0; i<$header_count; i++ )); do
     header_row+="| ${headers[$i]} "
     header_divider+="| --- "
 done
+if [ "$enableCF" = true ]; then
+  header_row+="| CF Response Policy "
+  header_divider+="| --- "
+fi
 echo -e "$header_row|" > $output_file
 echo -e "$header_divider|" >> $output_file
 
@@ -78,6 +113,28 @@ while read -r domain; do
         result+="| Not found "
       fi
     done
+
+    # Get settings from CF
+    # Attempt to match domain with CloudFront distribution
+    if [ "$enableCF" = true ]; then
+      distribution_id=$(aws cloudfront list-distributions --profile $awsProfile | jq -r ".DistributionList.Items[] | select(.Aliases.Items | .[]? == \"$domain\") | .Id")
+      echo "DistributionId: $distribution_id"
+      if [ ! -z "$distribution_id" ]; then
+        # Fetch the Response Headers Policy ID
+        response_headers_policy_id=$(aws cloudfront get-distribution --id "$distribution_id" --profile $awsProfile | jq -r ".Distribution.DistributionConfig.DefaultCacheBehavior.ResponseHeadersPolicyId")
+        # Fetch the Response Headers Policy name, if the policy ID is available
+        if [ ! -z "$response_headers_policy_id" ] && [ "$response_headers_policy_id" != "null" ]; then
+          response_headers_policy_name=$(aws cloudfront get-response-headers-policy --id "$response_headers_policy_id" --profile $awsProfile | jq -r ".ResponseHeadersPolicy.ResponseHeadersPolicyConfig.Name")
+          result+="| $response_headers_policy_name "
+          echo "Response header Policy: $response_headers_policy_name"
+        else
+          result+="| N/A "
+        fi
+      else
+        result+="| No CF distribution found "
+      fi
+    fi
+
   fi
   # Write the result to the output file
   echo -e "$result|" >> $output_file
