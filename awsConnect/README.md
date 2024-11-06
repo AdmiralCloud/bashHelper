@@ -33,7 +33,7 @@ source ~/.bash_profile # source ~/.zshrc if you use zsh
 ```
 
 # Prerequisites
-Create a config.txt file in the root directory of this project and add your MFA ARN. This way you don't have to enter it every time you use this script.
+Create a config.[profile name].txt (e.g. config.default.txt for default profile) file in the root directory of this project and add your MFA ARN. This way you don't have to enter it every time you use this script.
 
 ```
 MFAARN=arn:aws:iam::ACCOUNT-ID:mfa/USERNAME
