@@ -22,9 +22,17 @@ fi
 # ARN of MFA
 #read -e -p "MFA ARN [${MFAARN}]: " input
 #MFAARN="${input:-$MFAARN}"
+MFAURL="http://www.localhost:${MFA1PASSWORDPORT}/${MFA1PASSWORD}" # for my Amazon(LIVE)
+MFARESPONSE=$(curl -s "$MFAURL")
+if [ $? -ne 0 ]; then
+  read -p "Enter a valid MFA Token: " MFATOKEN
+else
+  MFATOKEN=$(echo "${MFARESPONSE}" | jq -r '.mfaToken')
+  if [ "${MFATOKEN}" == "null" ]; then
+    read -p "Enter a valid MFA Token: " MFATOKEN
+  fi
+fi
 
-
-read -p "Enter a valid MFA Token: " MFATOKEN
 
 session=$(aws sts get-session-token --serial-number ${MFAARN} --token-code ${MFATOKEN} --profile ${PROFILE}) 2> /dev/null
 PROFILENAME="${PROFILE}.mfa"
