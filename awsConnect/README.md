@@ -33,11 +33,21 @@ source ~/.bash_profile # source ~/.zshrc if you use zsh
 ```
 
 # Prerequisites
-Create a config.[profile name].txt (e.g. config.default.txt for default profile) file in the root directory of this project and add your MFA ARN. This way you don't have to enter it every time you use this script.
+Create a `config.[profile name].txt` (e.g. config.default.txt for default profile) file in the root directory of this project and add your MFA ARN. This way you don't have to enter it every time you use this script.
 
 ```
 MFAARN=arn:aws:iam::ACCOUNT-ID:mfa/USERNAME
 ```
+
+## (Optional) Prerequisites
+If you have setup [1password-cli](https://github.com/AdmiralCloud/ac-1password-cli) then `awsConnect/connect.sh` will try to utilise that to retrieve MFA key if needed.
+In `config.[profile name].txt` add line
+```
+MFA1PASWORD=<item-name-or-id>
+MFA1PASSWORDPORT=8473
+```
+* `<item-name-or-id>` - can be retrieved with 1password utility command `op`
+* 8473 - is the default port on which ac-1password-cli service runs
 
 # Copyright
 2022 Mark Poepping, [AdmiralCloud AG](https://www.admiralcloud.com)
